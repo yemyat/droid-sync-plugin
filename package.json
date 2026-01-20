@@ -1,0 +1,43 @@
+{
+  "name": "droid-sync",
+  "version": "0.1.0",
+  "description": "Sync Factory Droid sessions to OpenSync dashboard",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "droid-sync": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "hooks"
+  ],
+  "keywords": [
+    "factory",
+    "droid",
+    "opensync",
+    "session-sync",
+    "ai-coding"
+  ],
+  "author": "Wayne Sutton",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/waynesutton/droid-sync-plugin"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
