@@ -18,19 +18,101 @@ droid-sync login
 droid-sync status
 ```
 
-## How It Works
+## Core Architecture
 
-The plugin registers hooks in `~/.factory/settings.json` that sync data in real-time:
+```
+Factory Droid  →  hooks (stdin JSON)  →  CLI parses  →  SyncClient  →  Convex Backend
+```
 
-| Hook | What It Does |
-|------|--------------|
-| `SessionStart` | Creates session with project metadata, git branch |
-| `UserPromptSubmit` | Syncs each user prompt as it's submitted |
-| `PostToolUse` | Syncs tool calls (Read, Write, Bash, etc.) as they complete |
-| `Stop` | Updates session stats when Droid finishes responding |
-| `SessionEnd` | Finalizes session with end timestamp |
+### Source Files
 
-Each message and tool call is sent to your OpenSync backend immediately, so you can monitor sessions in real-time from the dashboard.
+| File                | Purpose                                                                |
+| ------------------- | ---------------------------------------------------------------------- |
+| `src/cli.ts`        | CLI entry point: `login`, `logout`, `status`, `verify`, `hook <event>` |
+| `src/hooks.ts`      | Event handlers: SessionStart, Stop, SessionEnd                         |
+| `src/api.ts`        | SyncClient class - HTTP requests to Convex backend                     |
+| `src/config.ts`     | Configuration loading/saving                                           |
+| `src/transcript.ts` | JSONL transcript parsing, incremental message extraction               |
+| `src/types.ts`      | TypeScript type definitions                                            |
+
+### Event Flow
+
+The plugin handles 3 Factory Droid lifecycle events:
+
+1. **SessionStart** → Extract project path, git branch, permission mode; create session in backend
+2. **Stop** → Parse transcript JSONL, extract new messages since last sync, batch sync to backend
+3. **SessionEnd** → Final message sync, update session with end timestamp, clear sync state
+
+### How Hooks Work
+
+When Factory Droid triggers a hook, it:
+
+1. Invokes `droid-sync hook <EventName>` as a subprocess
+2. Pipes JSON context to stdin (sessionId, transcriptPath, cwd, etc.)
+3. The CLI reads stdin, parses JSON, dispatches to the appropriate handler
+
+Example hook registration in `~/.factory/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "droid-sync hook SessionStart" }
+        ]
+      }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "droid-sync hook Stop" }] }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          { "type": "command", "command": "droid-sync hook SessionEnd" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Data Transformation
+
+The plugin transforms Factory Droid's internal schema to the backend's expected format:
+
+```
+Plugin receives          →  Backend expects
+─────────────────────────────────────────────
+sessionId                →  externalId
+messageId                →  externalId
+content                  →  textContent
+tool_use blocks          →  parts[{ type: "tool_use", content: {...} }]
+startedAt/endedAt        →  durationMs (calculated)
+```
+
+This mapping happens in `transformSession()` and `transformMessage()` methods in `src/api.ts`.
+
+### Incremental Sync
+
+Messages are synced incrementally to avoid duplicates:
+
+1. On each `Stop` event, parse the transcript JSONL file
+2. Load previously synced message IDs from state file
+3. Extract only new messages not in the synced set
+4. Sync new messages via batch API
+5. Save updated message IDs to state file
+
+State files: `~/.config/droid-sync/state/{sessionId}.json`
+
+### Config Storage
+
+| Location                           | Purpose                                          |
+| ---------------------------------- | ------------------------------------------------ |
+| `~/.config/droid-sync/config.json` | Primary config (convexUrl, apiKey, sync options) |
+| `~/.factory/settings.json`         | Hook registrations                               |
+| `~/.config/droid-sync/state/`      | Per-session sync state (synced message IDs)      |
+| Environment variables              | Override config (`DROID_SYNC_*`)                 |
 
 ## Commands
 
@@ -56,26 +138,6 @@ Config file: `~/.config/droid-sync/config.json`
   "syncThinking": false
 }
 ```
-
-Or use environment variables:
-
-```bash
-export DROID_SYNC_CONVEX_URL="https://your-project.convex.cloud"
-export DROID_SYNC_API_KEY="osk_your_api_key"
-```
-
-## What Gets Synced
-
-- **Session metadata**: project path, name, git branch, permission mode
-- **User prompts**: each prompt synced immediately on submit
-- **Tool calls**: tool name, arguments, and results (configurable)
-- **Message counts**: total messages and tool call counts
-
-## Privacy
-
-- All data syncs to YOUR Convex deployment only
-- Sensitive patterns are automatically redacted (API keys, tokens, passwords, PEM keys)
-- File contents from tool results are truncated to 1000 chars
 
 ## License
 
