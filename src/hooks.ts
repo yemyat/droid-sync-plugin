@@ -36,7 +36,7 @@ export async function handleSessionStart(input: HookInput): Promise<void> {
     sessionId: input.sessionId,
     source: "factory-droid",
     projectPath: input.cwd,
-    projectName: input.cwd.split("/").pop(),
+    projectName: input.cwd ? input.cwd.split("/").pop() : undefined,
     cwd: input.cwd,
     gitBranch,
     permissionMode: input.permissionMode,
@@ -66,10 +66,11 @@ export async function handleStop(input: HookInput): Promise<void> {
     model: settings?.model,
     messageCount: transcript.messageCount,
     toolCallCount: transcript.toolCallCount,
+    // TODO: revisit token usage - currently ignoring cacheReadTokens, cacheCreationTokens, thinkingTokens
     tokenUsage: settings?.tokenUsage
       ? {
-          input: (settings.tokenUsage.inputTokens ?? 0) + (settings.tokenUsage.cacheReadTokens ?? 0),
-          output: (settings.tokenUsage.outputTokens ?? 0) + (settings.tokenUsage.thinkingTokens ?? 0),
+          input: settings.tokenUsage.inputTokens ?? 0,
+          output: settings.tokenUsage.outputTokens ?? 0,
         }
       : undefined,
   });
@@ -121,10 +122,11 @@ export async function handleSessionEnd(input: HookInput): Promise<void> {
       model: settings?.model,
       messageCount: transcript.messageCount,
       toolCallCount: transcript.toolCallCount,
+      // TODO: revisit token usage - currently ignoring cacheReadTokens, cacheCreationTokens, thinkingTokens
       tokenUsage: settings?.tokenUsage
         ? {
-            input: (settings.tokenUsage.inputTokens ?? 0) + (settings.tokenUsage.cacheReadTokens ?? 0),
-            output: (settings.tokenUsage.outputTokens ?? 0) + (settings.tokenUsage.thinkingTokens ?? 0),
+            input: settings.tokenUsage.inputTokens ?? 0,
+            output: settings.tokenUsage.outputTokens ?? 0,
           }
         : undefined,
       endedAt: new Date().toISOString(),

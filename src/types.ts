@@ -117,9 +117,11 @@ export interface MessageData {
   source: "factory-droid";
   role: "user" | "assistant" | "system";
   content?: string;
+  thinkingContent?: string;
   toolName?: string;
   toolArgs?: Record<string, unknown>;
   toolResult?: string;
   durationMs?: number;
+  tokenCount?: number;
   timestamp?: string;
 }

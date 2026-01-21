@@ -44,9 +44,6 @@ export class SyncClient {
   }
 
   private transformSession(session: SessionData): Record<string, unknown> {
-    const startTime = session.startedAt ? new Date(session.startedAt).getTime() : undefined;
-    const endTime = session.endedAt ? new Date(session.endedAt).getTime() : undefined;
-
     return {
       externalId: session.sessionId,
       title: session.title,
@@ -57,23 +54,23 @@ export class SyncClient {
       promptTokens: session.tokenUsage?.input,
       completionTokens: session.tokenUsage?.output,
       cost: session.costEstimate,
-      messageCount: session.messageCount,
-      toolCallCount: session.toolCallCount,
-      durationMs: startTime && endTime ? endTime - startTime : undefined,
+      durationMs:
+        session.endedAt && session.startedAt
+          ? new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime()
+          : undefined,
     };
   }
 
   private transformMessage(message: MessageData): Record<string, unknown> {
-    const isToolCall = !!message.toolName;
-
     return {
       sessionExternalId: message.sessionId,
       externalId: message.messageId,
       role: message.role,
-      textContent: isToolCall ? undefined : message.content,
-      source: message.source,
+      textContent: message.content || message.toolResult,
+      model: undefined,
       durationMs: message.durationMs,
-      parts: isToolCall
+      source: message.source,
+      parts: message.toolName
         ? [
             {
               type: "tool_use",
