@@ -75,6 +75,23 @@ export interface TranscriptImageBlock {
   };
 }
 
+// Session settings file (.settings.json)
+export interface SessionSettings {
+  assistantActiveTimeMs?: number;
+  model?: string;
+  reasoningEffort?: string;
+  autonomyMode?: string;
+  providerLock?: string;
+  providerLockTimestamp?: string;
+  tokenUsage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+    cacheCreationTokens?: number;
+    cacheReadTokens?: number;
+    thinkingTokens?: number;
+  };
+}
+
 // API data types
 export interface SessionData {
   sessionId: string;

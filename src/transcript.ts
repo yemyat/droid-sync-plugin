@@ -8,6 +8,7 @@ import {
   TranscriptTextBlock,
   TranscriptToolUseBlock,
   MessageData,
+  SessionSettings,
 } from "./types.js";
 
 const SYNC_STATE_DIR = join(homedir(), ".config", "droid-sync", "state");
@@ -98,6 +99,22 @@ export function parseTranscript(transcriptPath: string): ParsedTranscript {
   }
 
   return result;
+}
+
+export function parseSessionSettings(transcriptPath: string): SessionSettings | null {
+  // Settings file is at same path but with .settings.json instead of .jsonl
+  const settingsPath = transcriptPath.replace(/\.jsonl$/, ".settings.json");
+
+  if (!existsSync(settingsPath)) {
+    return null;
+  }
+
+  try {
+    const content = readFileSync(settingsPath, "utf-8");
+    return JSON.parse(content) as SessionSettings;
+  } catch {
+    return null;
+  }
 }
 
 export interface ExtractedMessages {

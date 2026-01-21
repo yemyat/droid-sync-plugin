@@ -3,6 +3,7 @@ import { getConfig } from "./config.js";
 import { HookInput } from "./types.js";
 import {
   parseTranscript,
+  parseSessionSettings,
   extractNewMessages,
   markMessagesSynced,
   clearSyncState,
@@ -55,17 +56,23 @@ export async function handleStop(input: HookInput): Promise<void> {
   if (!input.transcriptPath) return;
 
   const transcript = parseTranscript(input.transcriptPath);
+  const settings = parseSessionSettings(input.transcriptPath);
 
-  // Sync session title if available (use 'title' field, not 'sessionTitle')
-  if (transcript.sessionStart?.title) {
-    await client.syncSession({
-      sessionId: input.sessionId,
-      source: "factory-droid",
-      title: transcript.sessionStart.title,
-      messageCount: transcript.messageCount,
-      toolCallCount: transcript.toolCallCount,
-    });
-  }
+  // Sync session data including token usage from settings file
+  await client.syncSession({
+    sessionId: input.sessionId,
+    source: "factory-droid",
+    title: transcript.sessionStart?.title,
+    model: settings?.model,
+    messageCount: transcript.messageCount,
+    toolCallCount: transcript.toolCallCount,
+    tokenUsage: settings?.tokenUsage
+      ? {
+          input: (settings.tokenUsage.inputTokens ?? 0) + (settings.tokenUsage.cacheReadTokens ?? 0),
+          output: (settings.tokenUsage.outputTokens ?? 0) + (settings.tokenUsage.thinkingTokens ?? 0),
+        }
+      : undefined,
+  });
 
   // Extract and sync new messages
   const { newMessages, allMessageIds } = extractNewMessages({
@@ -91,6 +98,7 @@ export async function handleSessionEnd(input: HookInput): Promise<void> {
   // Final sync with transcript data
   if (input.transcriptPath) {
     const transcript = parseTranscript(input.transcriptPath);
+    const settings = parseSessionSettings(input.transcriptPath);
 
     // Sync any remaining messages
     const { newMessages, allMessageIds } = extractNewMessages({
@@ -105,13 +113,20 @@ export async function handleSessionEnd(input: HookInput): Promise<void> {
       markMessagesSynced(input.sessionId, allMessageIds);
     }
 
-    // Update session with final stats
+    // Update session with final stats including token usage
     await client.syncSession({
       sessionId: input.sessionId,
       source: "factory-droid",
       title: transcript.sessionStart?.title,
+      model: settings?.model,
       messageCount: transcript.messageCount,
       toolCallCount: transcript.toolCallCount,
+      tokenUsage: settings?.tokenUsage
+        ? {
+            input: (settings.tokenUsage.inputTokens ?? 0) + (settings.tokenUsage.cacheReadTokens ?? 0),
+            output: (settings.tokenUsage.outputTokens ?? 0) + (settings.tokenUsage.thinkingTokens ?? 0),
+          }
+        : undefined,
       endedAt: new Date().toISOString(),
     });
   } else {
