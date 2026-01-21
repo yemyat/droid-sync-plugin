@@ -130,11 +130,6 @@ async function registerHooks(): Promise<void> {
       : {};
 
   const droidSyncHooks = {
-    SessionStart: [
-      {
-        hooks: [{ type: "command", command: "droid-sync hook SessionStart" }],
-      },
-    ],
     Stop: [
       {
         hooks: [{ type: "command", command: "droid-sync hook Stop" }],

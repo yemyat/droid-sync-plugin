@@ -23,11 +23,6 @@ async function getGitBranch(cwd: string): Promise<string | undefined> {
   }
 }
 
-export async function handleSessionStart(_input: HookInput): Promise<void> {
-  // No-op: We don't create sessions on start to avoid empty sessions
-  // Sessions are created on first "stop" when there's actual content
-}
-
 export async function handleStop(input: HookInput): Promise<void> {
   const client = getClient();
   if (!client) return;
@@ -112,9 +107,6 @@ export async function dispatchHook(eventName: string): Promise<void> {
 
   try {
     switch (normalizedEvent) {
-      case "sessionstart":
-        await handleSessionStart(input);
-        break;
       case "stop":
         await handleStop(input);
         break;
