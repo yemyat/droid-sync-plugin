@@ -54,10 +54,7 @@ export class SyncClient {
       promptTokens: session.tokenUsage?.input,
       completionTokens: session.tokenUsage?.output,
       cost: session.costEstimate,
-      durationMs:
-        session.endedAt && session.startedAt
-          ? new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime()
-          : undefined,
+      durationMs: session.durationMs,
     };
   }
 

@@ -107,8 +107,7 @@ export interface SessionData {
   costEstimate?: number;
   messageCount?: number;
   toolCallCount?: number;
-  startedAt?: string;
-  endedAt?: string;
+  durationMs?: number;
 }
 
 export interface MessageData {

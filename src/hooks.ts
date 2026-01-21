@@ -40,7 +40,6 @@ export async function handleSessionStart(input: HookInput): Promise<void> {
     cwd: input.cwd,
     gitBranch,
     permissionMode: input.permissionMode,
-    startedAt: new Date().toISOString(),
   });
 
   console.log(`[droid-sync] Session started: ${input.sessionId}`);
@@ -58,7 +57,7 @@ export async function handleStop(input: HookInput): Promise<void> {
   const transcript = parseTranscript(input.transcriptPath);
   const settings = parseSessionSettings(input.transcriptPath);
 
-  // Sync session data including token usage from settings file
+  // Sync session data including token usage and duration from settings file
   await client.syncSession({
     sessionId: input.sessionId,
     source: "factory-droid",
@@ -66,6 +65,7 @@ export async function handleStop(input: HookInput): Promise<void> {
     model: settings?.model,
     messageCount: transcript.messageCount,
     toolCallCount: transcript.toolCallCount,
+    durationMs: settings?.assistantActiveTimeMs,
     // TODO: revisit token usage - currently ignoring cacheReadTokens, cacheCreationTokens, thinkingTokens
     tokenUsage: settings?.tokenUsage
       ? {
@@ -114,7 +114,7 @@ export async function handleSessionEnd(input: HookInput): Promise<void> {
       markMessagesSynced(input.sessionId, allMessageIds);
     }
 
-    // Update session with final stats including token usage
+    // Update session with final stats including token usage and duration
     await client.syncSession({
       sessionId: input.sessionId,
       source: "factory-droid",
@@ -122,6 +122,7 @@ export async function handleSessionEnd(input: HookInput): Promise<void> {
       model: settings?.model,
       messageCount: transcript.messageCount,
       toolCallCount: transcript.toolCallCount,
+      durationMs: settings?.assistantActiveTimeMs,
       // TODO: revisit token usage - currently ignoring cacheReadTokens, cacheCreationTokens, thinkingTokens
       tokenUsage: settings?.tokenUsage
         ? {
@@ -129,13 +130,11 @@ export async function handleSessionEnd(input: HookInput): Promise<void> {
             output: settings.tokenUsage.outputTokens ?? 0,
           }
         : undefined,
-      endedAt: new Date().toISOString(),
     });
   } else {
     await client.syncSession({
       sessionId: input.sessionId,
       source: "factory-droid",
-      endedAt: new Date().toISOString(),
     });
   }
 
