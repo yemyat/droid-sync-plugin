@@ -132,7 +132,28 @@ async function registerHooks(): Promise<void> {
         hooks: [
           {
             type: "command",
-            command: "droid-sync hook session-start",
+            command: "droid-sync hook SessionStart",
+          },
+        ],
+      },
+    ],
+    UserPromptSubmit: [
+      {
+        hooks: [
+          {
+            type: "command",
+            command: "droid-sync hook UserPromptSubmit",
+          },
+        ],
+      },
+    ],
+    PostToolUse: [
+      {
+        matcher: "*",
+        hooks: [
+          {
+            type: "command",
+            command: "droid-sync hook PostToolUse",
           },
         ],
       },
@@ -142,7 +163,7 @@ async function registerHooks(): Promise<void> {
         hooks: [
           {
             type: "command",
-            command: "droid-sync hook stop",
+            command: "droid-sync hook Stop",
           },
         ],
       },
@@ -152,7 +173,7 @@ async function registerHooks(): Promise<void> {
         hooks: [
           {
             type: "command",
-            command: "droid-sync hook session-end",
+            command: "droid-sync hook SessionEnd",
           },
         ],
       },
@@ -208,6 +229,9 @@ EXAMPLES:
   droid-sync login
   droid-sync status
   droid-sync verify
+
+CONFIG FILE:
+  ~/.config/droid-sync/config.json
 
 DOCUMENTATION:
   https://docs.opensync.dev/factory-droid-plugin

@@ -1,6 +1,6 @@
 # droid-sync
 
-Sync your [Factory Droid](https://factory.ai) coding sessions to [OpenSync](https://opensync.dev).
+Sync your [Factory Droid](https://factory.ai) coding sessions to [OpenSync](https://opensync.dev) in real-time.
 
 ## Installation
 
@@ -11,26 +11,31 @@ npm install -g droid-sync
 ## Setup
 
 ```bash
-# Configure credentials
+# Configure credentials and register hooks
 droid-sync login
 
 # Verify connection
 droid-sync status
 ```
 
-## Usage
+## How It Works
 
-Once configured, sessions sync automatically when you use Droid.
+The plugin registers hooks in `~/.factory/settings.json` that sync data in real-time:
 
-The plugin registers hooks in `~/.factory/settings.json` that fire on:
-- **SessionStart** - Captures session metadata
-- **Stop** - Syncs messages and tool calls
-- **SessionEnd** - Finalizes session
+| Hook | What It Does |
+|------|--------------|
+| `SessionStart` | Creates session with project metadata, git branch |
+| `UserPromptSubmit` | Syncs each user prompt as it's submitted |
+| `PostToolUse` | Syncs tool calls (Read, Write, Bash, etc.) as they complete |
+| `Stop` | Updates session stats when Droid finishes responding |
+| `SessionEnd` | Finalizes session with end timestamp |
+
+Each message and tool call is sent to your OpenSync backend immediately, so you can monitor sessions in real-time from the dashboard.
 
 ## Commands
 
 ```
-droid-sync login     # Configure credentials
+droid-sync login     # Configure credentials and register hooks
 droid-sync logout    # Clear credentials
 droid-sync status    # Show connection status
 droid-sync verify    # Test connectivity
@@ -40,7 +45,7 @@ droid-sync version   # Show version
 
 ## Configuration
 
-Credentials stored at `~/.opensync/droid-credentials.json`:
+Config file: `~/.config/droid-sync/config.json`
 
 ```json
 {
@@ -61,16 +66,16 @@ export DROID_SYNC_API_KEY="osk_your_api_key"
 
 ## What Gets Synced
 
-- Session metadata (project, git branch, model)
-- User prompts and assistant responses
-- Tool calls and results (optional)
-- Token usage and cost estimates
+- **Session metadata**: project path, name, git branch, permission mode
+- **User prompts**: each prompt synced immediately on submit
+- **Tool calls**: tool name, arguments, and results (configurable)
+- **Message counts**: total messages and tool call counts
 
 ## Privacy
 
-- All data goes to YOUR Convex deployment
-- Sensitive patterns are automatically redacted
-- File contents are not synced
+- All data syncs to YOUR Convex deployment only
+- Sensitive patterns are automatically redacted (API keys, tokens, passwords, PEM keys)
+- File contents from tool results are truncated to 1000 chars
 
 ## License
 

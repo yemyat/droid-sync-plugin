@@ -10,8 +10,8 @@ export interface Config {
   syncThinking: boolean;
 }
 
-const CONFIG_DIR = join(homedir(), ".opensync");
-const CONFIG_FILE = join(CONFIG_DIR, "droid-credentials.json");
+const CONFIG_DIR = join(homedir(), ".config", "droid-sync");
+const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 
 export function getConfigPaths() {
   return { configDir: CONFIG_DIR, configFile: CONFIG_FILE };
