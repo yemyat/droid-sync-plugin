@@ -23,26 +23,9 @@ async function getGitBranch(cwd: string): Promise<string | undefined> {
   }
 }
 
-export async function handleSessionStart(input: HookInput): Promise<void> {
-  const client = getClient();
-  if (!client) return;
-
-  const config = getConfig();
-  if (!config?.autoSync) return;
-
-  const gitBranch = await getGitBranch(input.cwd);
-
-  await client.syncSession({
-    sessionId: input.sessionId,
-    source: "factory-droid",
-    projectPath: input.cwd,
-    projectName: input.cwd ? input.cwd.split("/").pop() : undefined,
-    cwd: input.cwd,
-    gitBranch,
-    permissionMode: input.permissionMode,
-  });
-
-  console.log(`[droid-sync] Session started: ${input.sessionId}`);
+export async function handleSessionStart(_input: HookInput): Promise<void> {
+  // No-op: We don't create sessions on start to avoid empty sessions
+  // Sessions are created on first "stop" when there's actual content
 }
 
 export async function handleStop(input: HookInput): Promise<void> {
@@ -56,17 +39,22 @@ export async function handleStop(input: HookInput): Promise<void> {
 
   const transcript = parseTranscript(input.transcriptPath);
   const settings = parseSessionSettings(input.transcriptPath);
+  const gitBranch = await getGitBranch(input.cwd);
 
-  // Sync session data including token usage and duration from settings file
+  // Sync session data (creates on first call, updates on subsequent)
   await client.syncSession({
     sessionId: input.sessionId,
     source: "factory-droid",
+    projectPath: input.cwd,
+    projectName: input.cwd ? input.cwd.split("/").pop() : undefined,
+    cwd: input.cwd,
+    gitBranch,
+    permissionMode: input.permissionMode,
     title: transcript.sessionStart?.title,
     model: settings?.model,
     messageCount: transcript.messageCount,
     toolCallCount: transcript.toolCallCount,
     durationMs: settings?.assistantActiveTimeMs,
-    // TODO: revisit token usage - currently ignoring cacheReadTokens, cacheCreationTokens, thinkingTokens
     tokenUsage: settings?.tokenUsage
       ? {
           input: settings.tokenUsage.inputTokens ?? 0,
@@ -90,56 +78,9 @@ export async function handleStop(input: HookInput): Promise<void> {
 }
 
 export async function handleSessionEnd(input: HookInput): Promise<void> {
-  const client = getClient();
-  if (!client) return;
-
-  const config = getConfig();
-  if (!config?.autoSync) return;
-
-  // Final sync with transcript data
-  if (input.transcriptPath) {
-    const transcript = parseTranscript(input.transcriptPath);
-    const settings = parseSessionSettings(input.transcriptPath);
-
-    // Sync any remaining messages
-    const { newMessages, allMessageIds } = extractNewMessages({
-      sessionId: input.sessionId,
-      transcript,
-      syncToolCalls: config.syncToolCalls ?? true,
-      syncThinking: config.syncThinking ?? false,
-    });
-
-    if (newMessages.length > 0) {
-      await client.syncBatch([], newMessages);
-      markMessagesSynced(input.sessionId, allMessageIds);
-    }
-
-    // Update session with final stats including token usage and duration
-    await client.syncSession({
-      sessionId: input.sessionId,
-      source: "factory-droid",
-      title: transcript.sessionStart?.title,
-      model: settings?.model,
-      messageCount: transcript.messageCount,
-      toolCallCount: transcript.toolCallCount,
-      durationMs: settings?.assistantActiveTimeMs,
-      // TODO: revisit token usage - currently ignoring cacheReadTokens, cacheCreationTokens, thinkingTokens
-      tokenUsage: settings?.tokenUsage
-        ? {
-            input: settings.tokenUsage.inputTokens ?? 0,
-            output: settings.tokenUsage.outputTokens ?? 0,
-          }
-        : undefined,
-    });
-  } else {
-    await client.syncSession({
-      sessionId: input.sessionId,
-      source: "factory-droid",
-    });
-  }
-
+  // Clean up local sync state (synced message IDs cache)
+  // All actual syncing is handled by handleStop
   clearSyncState(input.sessionId);
-  console.log(`[droid-sync] Session ended: ${input.sessionId}`);
 }
 
 export async function dispatchHook(eventName: string): Promise<void> {

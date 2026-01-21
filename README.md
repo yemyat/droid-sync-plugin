@@ -29,7 +29,7 @@ Factory Droid  →  hooks (stdin JSON)  →  CLI parses  →  SyncClient  →  C
 | File                | Purpose                                                                |
 | ------------------- | ---------------------------------------------------------------------- |
 | `src/cli.ts`        | CLI entry point: `login`, `logout`, `status`, `verify`, `hook <event>` |
-| `src/hooks.ts`      | Event handlers: SessionStart, Stop, SessionEnd                         |
+| `src/hooks.ts`      | Event handlers (primary: Stop)                                         |
 | `src/api.ts`        | SyncClient class - HTTP requests to Convex backend                     |
 | `src/config.ts`     | Configuration loading/saving                                           |
 | `src/transcript.ts` | JSONL transcript parsing, incremental message extraction               |
@@ -37,11 +37,10 @@ Factory Droid  →  hooks (stdin JSON)  →  CLI parses  →  SyncClient  →  C
 
 ### Event Flow
 
-The plugin handles 3 Factory Droid lifecycle events:
+The plugin uses the **Stop** event for all syncing:
 
-1. **SessionStart** → Extract project path, git branch, permission mode; create session in backend
-2. **Stop** → Parse transcript JSONL, extract new messages since last sync, batch sync to backend
-3. **SessionEnd** → Final message sync, update session with end timestamp, clear sync state
+1. **Stop** → Creates/updates session with metadata (project, git branch, model, tokens, duration), parses transcript, syncs new messages
+2. **SessionEnd** → Clears local sync state (synced message ID cache)
 
 ### How Hooks Work
 
@@ -56,39 +55,29 @@ Example hook registration in `~/.factory/settings.json`:
 ```json
 {
   "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          { "type": "command", "command": "droid-sync hook SessionStart" }
-        ]
-      }
-    ],
     "Stop": [
       { "hooks": [{ "type": "command", "command": "droid-sync hook Stop" }] }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          { "type": "command", "command": "droid-sync hook SessionEnd" }
-        ]
-      }
     ]
   }
 }
 ```
+
+> **Note:** Only the `Stop` hook is required. `SessionEnd` only clears local cache.
 
 ### Data Transformation
 
 The plugin transforms Factory Droid's internal schema to the backend's expected format:
 
 ```
-Plugin receives          →  Backend expects
-─────────────────────────────────────────────
-sessionId                →  externalId
-messageId                →  externalId
-content                  →  textContent
-tool_use blocks          →  parts[{ type: "tool_use", content: {...} }]
-startedAt/endedAt        →  durationMs (calculated)
+Plugin receives              →  Backend expects
+───────────────────────────────────────────────────
+sessionId                    →  externalId
+messageId                    →  externalId
+content                      →  textContent
+tool_use blocks              →  parts[{ type: "tool_use", content: {...} }]
+assistantActiveTimeMs        →  durationMs
+tokenUsage.inputTokens       →  tokenUsage.input
+tokenUsage.outputTokens      →  tokenUsage.output
 ```
 
 This mapping happens in `transformSession()` and `transformMessage()` methods in `src/api.ts`.
