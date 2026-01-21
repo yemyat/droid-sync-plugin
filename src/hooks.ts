@@ -56,12 +56,12 @@ export async function handleStop(input: HookInput): Promise<void> {
 
   const transcript = parseTranscript(input.transcriptPath);
 
-  // Sync session title if available
-  if (transcript.sessionStart?.sessionTitle) {
+  // Sync session title if available (use 'title' field, not 'sessionTitle')
+  if (transcript.sessionStart?.title) {
     await client.syncSession({
       sessionId: input.sessionId,
       source: "factory-droid",
-      title: transcript.sessionStart.sessionTitle,
+      title: transcript.sessionStart.title,
       messageCount: transcript.messageCount,
       toolCallCount: transcript.toolCallCount,
     });
@@ -109,7 +109,7 @@ export async function handleSessionEnd(input: HookInput): Promise<void> {
     await client.syncSession({
       sessionId: input.sessionId,
       source: "factory-droid",
-      title: transcript.sessionStart?.sessionTitle,
+      title: transcript.sessionStart?.title,
       messageCount: transcript.messageCount,
       toolCallCount: transcript.toolCallCount,
       endedAt: new Date().toISOString(),

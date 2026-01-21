@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createInterface } from "readline";
-import { getConfig, setConfig, clearConfig, getConfigPaths, Config } from "./config.js";
+import { getConfig, setConfig, clearConfig, Config } from "./config.js";
 import { testConnection } from "./api.js";
 import { dispatchHook } from "./hooks.js";
 import { existsSync, readFileSync, writeFileSync } from "fs";
@@ -124,7 +124,10 @@ async function registerHooks(): Promise<void> {
   }
 
   // Merge hooks
-  const hooks = (settings.hooks as Record<string, unknown[]>) || {};
+  const hooks: Record<string, unknown[]> =
+    typeof settings.hooks === "object" && settings.hooks !== null && !Array.isArray(settings.hooks)
+      ? (settings.hooks as Record<string, unknown[]>)
+      : {};
 
   const droidSyncHooks = {
     SessionStart: [
@@ -145,11 +148,16 @@ async function registerHooks(): Promise<void> {
   };
 
   for (const [event, eventHooks] of Object.entries(droidSyncHooks)) {
-    const existing = hooks[event] || [];
+    const existing = Array.isArray(hooks[event]) ? hooks[event] : [];
     // Check if our hook is already registered
-    const hasOurHook = (existing as Array<{ hooks?: Array<{ command?: string }> }>).some((h) =>
-      h.hooks?.some((hh) => hh.command?.startsWith("droid-sync"))
-    );
+    const hasOurHook = existing.some((h) => {
+      if (typeof h !== "object" || h === null) return false;
+      const hook = h as { hooks?: unknown };
+      if (!Array.isArray(hook.hooks)) return false;
+      return hook.hooks.some(
+        (hh) => typeof hh === "object" && hh !== null && (hh as { command?: string }).command?.startsWith("droid-sync")
+      );
+    });
     if (!hasOurHook) {
       hooks[event] = [...existing, ...eventHooks];
     }
@@ -185,7 +193,6 @@ COMMANDS:
   status        Show authentication and connection status
   verify        Test connectivity to OpenSync
   config        Show current configuration
-  hook <event>  Handle a Droid hook event (internal use)
   version       Show version
   help          Show this help
 
@@ -196,9 +203,6 @@ EXAMPLES:
 
 CONFIG FILE:
   ~/.config/droid-sync/config.json
-
-DOCUMENTATION:
-  https://docs.opensync.dev/factory-droid-plugin
 `);
 }
 

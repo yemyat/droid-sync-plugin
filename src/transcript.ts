@@ -132,9 +132,9 @@ export function extractNewMessages(opts: {
 
     for (const block of content) {
       if (block.type === "text") {
-        textContent += (block as TranscriptTextBlock).text;
+        textContent += block.text;
       } else if (block.type === "tool_use" && syncToolCalls) {
-        toolCalls.push(block as TranscriptToolUseBlock);
+        toolCalls.push(block);
       } else if (block.type === "thinking" && syncThinking) {
         // Could add thinking content if desired
       }

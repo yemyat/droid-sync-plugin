@@ -1,8 +1,6 @@
 import { getConfig, Config } from "./config.js";
 import { SessionData, MessageData } from "./types.js";
 
-export type { SessionData, MessageData };
-
 export class SyncClient {
   private config: Config;
   private siteUrl: string;
@@ -93,11 +91,6 @@ export class SyncClient {
   async syncSession(session: SessionData): Promise<void> {
     const payload = this.transformSession(session);
     await this.request("/sync/session", payload);
-  }
-
-  async syncMessage(message: MessageData): Promise<void> {
-    const payload = this.transformMessage(message);
-    await this.request("/sync/message", payload);
   }
 
   async syncBatch(sessions: SessionData[], messages: MessageData[]): Promise<void> {

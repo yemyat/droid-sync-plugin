@@ -13,10 +13,6 @@ export interface Config {
 const CONFIG_DIR = join(homedir(), ".config", "droid-sync");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 
-export function getConfigPaths() {
-  return { configDir: CONFIG_DIR, configFile: CONFIG_FILE };
-}
-
 export function getConfig(): Config | null {
   // Check env vars first
   const envUrl = process.env.DROID_SYNC_CONVEX_URL;
