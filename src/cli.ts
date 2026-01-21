@@ -129,53 +129,17 @@ async function registerHooks(): Promise<void> {
   const droidSyncHooks = {
     SessionStart: [
       {
-        hooks: [
-          {
-            type: "command",
-            command: "droid-sync hook SessionStart",
-          },
-        ],
-      },
-    ],
-    UserPromptSubmit: [
-      {
-        hooks: [
-          {
-            type: "command",
-            command: "droid-sync hook UserPromptSubmit",
-          },
-        ],
-      },
-    ],
-    PostToolUse: [
-      {
-        matcher: "*",
-        hooks: [
-          {
-            type: "command",
-            command: "droid-sync hook PostToolUse",
-          },
-        ],
+        hooks: [{ type: "command", command: "droid-sync hook SessionStart" }],
       },
     ],
     Stop: [
       {
-        hooks: [
-          {
-            type: "command",
-            command: "droid-sync hook Stop",
-          },
-        ],
+        hooks: [{ type: "command", command: "droid-sync hook Stop" }],
       },
     ],
     SessionEnd: [
       {
-        hooks: [
-          {
-            type: "command",
-            command: "droid-sync hook SessionEnd",
-          },
-        ],
+        hooks: [{ type: "command", command: "droid-sync hook SessionEnd" }],
       },
     ],
   };
