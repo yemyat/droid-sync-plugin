@@ -34,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/waynesutton/droid-sync-plugin"
+    "url": "https://github.com/yemyat/droid-sync-plugin"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
